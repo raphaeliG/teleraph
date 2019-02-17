@@ -2,7 +2,6 @@
 
 net::Server::Server(std::string portNumber)
 {
-	listening = false;
 	{
 		std::lock_guard<std::mutex> lock(mute);
 		logger.start("server-log_" + portNumber + ".log");
@@ -20,7 +19,7 @@ net::Server::Server(std::string portNumber)
 		return;
 	}
 
-	struct addrinfo *result = NULL, *ptr = NULL, hints;
+	struct addrinfo *ptr = NULL, hints;
 	ZeroMemory(&hints, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
@@ -28,7 +27,7 @@ net::Server::Server(std::string portNumber)
 	hints.ai_flags = AI_PASSIVE;
 
 	// Resolve the local address and port to be used by the server
-	iResult = getaddrinfo(NULL, portNumber.c_str(), &hints, &result);
+	iResult = getaddrinfo(NULL, portNumber.c_str(), &hints, &localData);
 	if (iResult)
 	{
 		{
@@ -40,54 +39,37 @@ net::Server::Server(std::string portNumber)
 		return;
 	}
 
-	localData = result;
-
-	// Create a SOCKET for the server to listen for client connections
-	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-
-	if (ListenSocket == INVALID_SOCKET)
-	{
-		{
-			std::lock_guard<std::mutex> lock(mute);
-			logger << "Error at socket(): " << WSAGetLastError() << "\n";
-		}
-		freeaddrinfo(result);
-		localData = NULL;
-		WSACleanup();
-		usable = false;
-		return;
+	DWORD rv, size;
+	PIP_ADAPTER_ADDRESSES adapter_addresses, aa;
+	PIP_ADAPTER_UNICAST_ADDRESS ua;
+	rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
+	if (rv != ERROR_BUFFER_OVERFLOW) {
+		addresses = std::vector<std::string>();
+	}
+	adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
+	rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+	if (rv != ERROR_SUCCESS) {
+		free(adapter_addresses);
+		addresses = std::vector<std::string>();
 	}
 
-	// Setup the TCP listening socket
-	iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
-	if (iResult == SOCKET_ERROR)
+	for (aa = adapter_addresses; aa != NULL; aa = aa->Next)
 	{
+		for (ua = aa->FirstUnicastAddress; ua != NULL; ua = ua->Next)
 		{
-			std::lock_guard<std::mutex> lock(mute);
-			logger << "bind failed with error: " << WSAGetLastError() << "\n";
+			if (ua->Address.lpSockaddr->sa_family == AF_INET)
+			{
+				char buf[BUFSIZ] = { 0 };
+				getnameinfo(ua->Address.lpSockaddr, ua->Address.iSockaddrLength, buf, sizeof(buf), NULL, 0, NI_NUMERICHOST);
+				if ((std::string)buf != "127.0.0.1")
+					addresses.push_back(buf);
+			}
 		}
-		freeaddrinfo(result);
-		localData = NULL;
-		closesocket(ListenSocket);
-		WSACleanup();
-		usable = false;
-		return;
 	}
+	free(adapter_addresses);
 
-	if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
-	{
-		{
-			std::lock_guard<std::mutex> lock(mute);
-			logger << "Listen failed with error: " << WSAGetLastError() << "\n";
-		}
-		freeaddrinfo(result);
-		localData = NULL;
-		closesocket(ListenSocket);
-		WSACleanup();
-		usable = false;
-		return;
-	}
 	usable = true;
+	restart_listening();
 }
 
 net::Server::~Server()
@@ -148,10 +130,55 @@ bool net::Server::is_usable() const
 
 void net::Server::stop_listening()
 {
-	if (usable && ListenSocket != INVALID_SOCKET)
+	std::lock_guard<std::mutex> lock(mute);
+	if (usable)
 	{
-		closesocket(ListenSocket);
-		ListenSocket = INVALID_SOCKET;
+		if (ListenSocket != INVALID_SOCKET)
+		{
+			closesocket(ListenSocket);
+			ListenSocket = INVALID_SOCKET;
+		}
+	}
+}
+
+void net::Server::restart_listening()
+{
+	if (usable)
+	{
+		stop_listening();
+		wait_for_clients();
+		// Create a SOCKET for the server to listen for client connections
+		ListenSocket = socket(localData->ai_family, localData->ai_socktype, localData->ai_protocol);
+		if (ListenSocket == INVALID_SOCKET)
+		{
+			{
+				std::lock_guard<std::mutex> lock(mute);
+				logger << "Error at socket(): " << WSAGetLastError() << "\n";
+			}
+			return;
+		}
+
+		// Setup the TCP listening socket
+		int iResult = bind(ListenSocket, localData->ai_addr, (int)localData->ai_addrlen);
+		if (iResult == SOCKET_ERROR)
+		{
+			{
+				std::lock_guard<std::mutex> lock(mute);
+				logger << "bind failed with error: " << WSAGetLastError() << "\n";
+			}
+			closesocket(ListenSocket);
+			return;
+		}
+
+		if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
+		{
+			{
+				std::lock_guard<std::mutex> lock(mute);
+				logger << "Listen failed with error: " << WSAGetLastError() << "\n";
+			}
+			closesocket(ListenSocket);
+			return;
+		}
 	}
 }
 
@@ -174,4 +201,9 @@ void net::Server::wait_for_clients()
 				empty = true;
 		}
 	}
+}
+
+std::vector<std::string> net::Server::get_addresses() const
+{
+	return addresses;
 }

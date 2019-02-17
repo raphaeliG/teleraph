@@ -10,7 +10,6 @@
 #endif
 
 #include <winsock2.h>
-#pragma comment(lib, "Ws2_32.lib")
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include <string>
@@ -18,6 +17,8 @@
 #include <thread>
 #include <mutex>
 #include "logging.h"
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "iphlpapi.lib")
 
 namespace net
 {
@@ -26,11 +27,11 @@ namespace net
 	{
 	private:
 		bool usable;
-		bool listening;
 		WSADATA wsaData;
 		SOCKET ListenSocket;
 		std::vector<SOCKET> sockets;
 		std::vector<std::thread> join_threads;
+		std::vector<std::string> addresses;
 		std::mutex mute;
 		Logger logger;
 		addrinfo* localData;
@@ -46,8 +47,9 @@ namespace net
 		void add_client();//Non-blocking function to add a client.
 		bool is_usable() const;//Determines whether the server is usable
 		void stop_listening();
-		//void start_listening();
+		void restart_listening();
 		void wait_for_clients();//Pauses the thread this function is called from untill all existing join threads are completed
+		std::vector<std::string> get_addresses() const;//Returns a vector containing all possible IPv4 addresses of the server
 		friend void accept_client(Server& server);//Blocking function to add a client.
 	};
 
