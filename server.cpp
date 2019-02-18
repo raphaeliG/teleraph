@@ -77,11 +77,9 @@ net::Server::~Server()
 	if (usable)
 	{
 		stop_listening();
-		wait_for_clients();
 		if (localData)
 			freeaddrinfo(localData);
 		WSACleanup();
-		logger.close();
 		usable = false;
 	}
 }
@@ -130,14 +128,15 @@ bool net::Server::is_usable() const
 
 void net::Server::stop_listening()
 {
-	std::lock_guard<std::mutex> lock(mute);
 	if (usable)
 	{
 		if (ListenSocket != INVALID_SOCKET)
 		{
+			std::lock_guard<std::mutex> lock(mute);
 			closesocket(ListenSocket);
 			ListenSocket = INVALID_SOCKET;
 		}
+		wait_for_clients();
 	}
 }
 

@@ -7,7 +7,6 @@
 class Logger
 {
 private:
-	std::mutex muteLog;
 	std::string logName;
 	std::fstream log;
 	bool usable;
@@ -15,18 +14,18 @@ public:
 	Logger() : usable(false) {}
 	Logger(std::string logName) : logName(logName), usable(true)
 	{
-		std::lock_guard<std::mutex> lock(muteLog);
 		std::ofstream temp(logName);
 		if (temp.is_open())
 			temp.close();
 	}
 	~Logger()
 	{
-		close();
+		usable = false;
+		if (log.is_open())
+			log.close();
 	}
 	void start(std::string logName)
 	{
-		std::lock_guard<std::mutex> lock(muteLog);
 		if (log.is_open())
 			log.close();
 		this->logName = logName;
@@ -38,7 +37,6 @@ public:
 	template <typename T>
 	Logger& operator<<(T output)
 	{
-		std::lock_guard<std::mutex> lock(muteLog);
 		if (usable)
 		{
 			if (log.is_open())
@@ -62,11 +60,6 @@ public:
 			}
 		}
 		return *this;
-	}
-	void close()
-	{
-		std::lock_guard<std::mutex> lock(muteLog);
-		usable = false;
 	}
 };
 
