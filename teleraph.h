@@ -64,14 +64,38 @@ namespace net
 		~Server();
 		static void accept_client(Server& server);//Blocking function to add a client.
 		void add_client();//Non-blocking function to add a client.
-		bool is_usable() const;//Determines whether the server is usable
+		bool is_usable() const { return usable; }//Determines whether the server is usable
 		void stop_listening();
 		void restart_listening();
 		void wait_for_clients();//Pauses the thread this function is called from untill all existing join threads are completed
-		std::vector<std::string> get_addresses() const;//Returns a vector containing all possible IPv4 addresses of the server
+		std::vector<std::string> get_addresses() const { return addresses; }//Returns a vector containing all possible IPv4 addresses of the server
+		std::string getPortNumber() const { return portNumber; }
 	};
 
-	class Client;
+	class Client
+	{
+	private:
+		bool usable;
+		bool doesLog;
+		WSADATA wsaData;
+		SOCKET connection;
+		std::string portNumber;
+		Logger logger;
+		addrinfo* serverData;
+	public:
+		/*
+		Starts a client on the local machine, with a given port number.
+		if any error occurs, the client will become unusable, and a proper error message will be sent to a log file.
+		parameters:
+		portNumber - the port number, given as a string. best when set to above 10000.
+		doesLog - decides whether the server will be using a log when it runs
+		*/
+		Client(std::string portNumber, bool doesLog = false);
+		~Client();
+		bool connect_to_server(std::string address);
+		bool is_usable() const { return usable; }//Determines whether the server is usable
+		std::string getPortNumber() const { return portNumber; }
+	};
 }
 
 template <typename T>

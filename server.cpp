@@ -127,11 +127,6 @@ void net::Server::add_client()
 	}
 }
 
-bool net::Server::is_usable() const
-{
-	return usable;
-}
-
 void net::Server::stop_listening()
 {
 	if (usable)
@@ -209,9 +204,4 @@ void net::Server::wait_for_clients()
 				empty = true;
 		}
 	}
-}
-
-std::vector<std::string> net::Server::get_addresses() const
-{
-	return addresses;
 }
