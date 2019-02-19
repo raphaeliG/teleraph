@@ -1,11 +1,10 @@
 #include "teleraph.h"
 
-net::Server::Server(std::string portNumber, bool doesLog) : portNumber(portNumber), doesLog(doesLog)
+net::Server::Server(std::string portNumber)
 {
 	{
 		std::lock_guard<std::mutex> lock(mute);
-		if (doesLog)
-			logger.start("server-log_" + portNumber + ".log");
+		logger.start("server-log_" + portNumber + ".log");
 	}
 
 	// Initialize Winsock
@@ -14,8 +13,7 @@ net::Server::Server(std::string portNumber, bool doesLog) : portNumber(portNumbe
 	{
 		{
 			std::lock_guard<std::mutex> lock(mute);
-			if (doesLog)
-				logger << "WSAStartup failed: " << iResult << "\n";
+			logger << "WSAStartup failed: " << iResult << "\n";
 		}
 		usable = false;
 		return;
@@ -34,8 +32,7 @@ net::Server::Server(std::string portNumber, bool doesLog) : portNumber(portNumbe
 	{
 		{
 			std::lock_guard<std::mutex> lock(mute);
-			if (doesLog)
-				logger << "getaddrinfo failed: " << iResult << "\n";
+			logger << "getaddrinfo failed: " << iResult << "\n";
 		}
 		WSACleanup();
 		usable = false;
@@ -87,7 +84,7 @@ net::Server::~Server()
 	}
 }
 
-void net::Server::accept_client(net::Server& server)
+void net::accept_client(net::Server& server)
 {
 	if (server.usable)
 	{
@@ -97,17 +94,14 @@ void net::Server::accept_client(net::Server& server)
 		{
 			std::lock_guard<std::mutex> lock(server.mute);
 			int e = WSAGetLastError();
-			if (server.doesLog)
-				server.logger << "accept failed: " << e << "\n";
+			server.logger << "accept failed: " << e << "\n";
 			switch (e)
 			{
 			case WSAEINTR:
-				if (server.doesLog)
-					server.logger << 'E' << e << ": server stopped listening to incoming connections while an accept request was open\n";
+				server.logger << 'E' << e << ": server stopped listening to incoming connections while an accept request was open\n";
 				break;
 			default:
-				if (server.doesLog)
-					server.logger << 'E' << e << ": unkown error message.\n";
+				server.logger << 'E' << e << ": unkown error message.\n";
 			}
 		}
 		else
@@ -125,6 +119,11 @@ void net::Server::add_client()
 		std::thread thread(std::thread(accept_client, std::ref(*this)));
 		join_threads.push_back(std::move(thread));
 	}
+}
+
+bool net::Server::is_usable() const
+{
+	return usable;
 }
 
 void net::Server::stop_listening()
@@ -153,8 +152,7 @@ void net::Server::restart_listening()
 		{
 			{
 				std::lock_guard<std::mutex> lock(mute);
-				if (doesLog)
-					logger << "Error at socket(): " << WSAGetLastError() << "\n";
+				logger << "Error at socket(): " << WSAGetLastError() << "\n";
 			}
 			return;
 		}
@@ -165,8 +163,7 @@ void net::Server::restart_listening()
 		{
 			{
 				std::lock_guard<std::mutex> lock(mute);
-				if (doesLog)
-					logger << "bind failed with error: " << WSAGetLastError() << "\n";
+				logger << "bind failed with error: " << WSAGetLastError() << "\n";
 			}
 			closesocket(ListenSocket);
 			return;
@@ -176,8 +173,7 @@ void net::Server::restart_listening()
 		{
 			{
 				std::lock_guard<std::mutex> lock(mute);
-				if (doesLog)
-					logger << "Listen failed with error: " << WSAGetLastError() << "\n";
+				logger << "Listen failed with error: " << WSAGetLastError() << "\n";
 			}
 			closesocket(ListenSocket);
 			return;
@@ -204,4 +200,9 @@ void net::Server::wait_for_clients()
 				empty = true;
 		}
 	}
+}
+
+std::vector<std::string> net::Server::get_addresses() const
+{
+	return addresses;
 }
