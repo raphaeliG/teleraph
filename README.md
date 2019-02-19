@@ -29,7 +29,7 @@ int main()
 {
     Server s1("33565");
     Server s2("33565");
-    //We started two servers binded to the same port, on the same machine,
+    //We started two servers that are binded to the same port, on the same machine,
     //and therefore the behaviour of the servers and their clients is undefined.
     
     //some more code using the servers
