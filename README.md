@@ -12,7 +12,7 @@ Just download the files of the repository into your project. It's that easy!
 
 ### Using teleraph
 
-The Telegraph project, as you would expect, provides a header file called "teleraph.h", which contains the capabilty of using servers and clients. In order to do so, it gives you a nice little namespace called `net` which contains the `Server` and `Client` classes, so if you'd want to use those classes (which you do, of course), you'd either need to write `net::` before the object name, or write `using namespace net;` at the beginning of your code.
+The Telegraph project, as you would expect, provides a header file called "teleraph.h", which contains the capabilty of using servers and clients. In order to do so, it gives you a nice little namespace called `net` which contains the `Server` and `Client` classes, so if you'd want to use those classes (which you do, of course), you'd either need to write `net::` before the object name, or write `using namespace net;` at the beginning of your code. It also provides an easy to use `Logger` class which you can use if you want to.
 
 ---
 
