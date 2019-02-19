@@ -1,6 +1,6 @@
 #include "teleraph.h"
 
-net::Logger::Logger(std::string logName) : logName(logName), usable(true)
+net::Logger::Logger(std::string logName) : logName(logName)
 {
 	std::ofstream temp(logName);
 	if (temp.is_open())
@@ -9,7 +9,6 @@ net::Logger::Logger(std::string logName) : logName(logName), usable(true)
 
 net::Logger::~Logger()
 {
-	usable = false;
 	if (log.is_open())
 		log.close();
 }
@@ -22,5 +21,4 @@ void net::Logger::start(std::string logName)
 	std::ofstream temp(logName);
 	if (temp.is_open())
 		temp.close();
-	usable = true;
 }

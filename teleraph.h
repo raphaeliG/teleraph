@@ -16,12 +16,26 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <fstream>
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "iphlpapi.lib")
-#include "logging.h"
 
 namespace net
 {
+	class Logger
+	{
+	private:
+		std::string logName;
+		std::fstream log;
+	public:
+		Logger() {};
+		Logger(std::string logName);
+		~Logger();
+		void start(std::string logName);
+		template <typename T>
+		Logger& operator<<(T output);
+	};
+
 	typedef char byte;
 	class Server
 	{
@@ -54,46 +68,28 @@ namespace net
 	};
 
 	class Client;
-
-	class Logger
-	{
-	private:
-		std::string logName;
-		std::fstream log;
-		bool usable;
-	public:
-		Logger() : usable(false) {}
-		Logger(std::string logName);
-		~Logger();
-		void start(std::string logName);
-		template <typename T>
-		Logger& operator<<(T output);
-	};
 }
 
 template <typename T>
 net::Logger& net::Logger::operator<<(T output)
 {
-	if (usable)
+	if (log.is_open())
 	{
+		log.close();
+		log.open(logName, std::fstream::app | std::fstream::in | std::fstream::out);
 		if (log.is_open())
 		{
+			log << output;
 			log.close();
-			log.open(logName, std::fstream::app | std::fstream::in | std::fstream::out);
-			if (log.is_open())
-			{
-				log << output;
-				log.close();
-			}
 		}
-		else
+	}
+	else
+	{
+		log.open(logName, std::fstream::app | std::fstream::in | std::fstream::out);
+		if (log.is_open())
 		{
-			log.open(logName, std::fstream::app | std::fstream::in | std::fstream::out);
-			if (log.is_open())
-			{
-				log << output;
-				log.close();
-			}
+			log << output;
+			log.close();
 		}
 	}
 	return *this;
