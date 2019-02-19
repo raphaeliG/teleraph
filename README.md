@@ -16,7 +16,7 @@ The Telegraph project, as you would expect, provides a header file called "teler
 
 ---
 
-### Good networking programming notes
+### Good networking programming notes - The "Dos and Don'ts"
 
 1. Don't start two or more servers binded to the same port on the same machine.\
 If you do, the behavior of both the servers and the clients connected to them is then undefined.\
@@ -36,6 +36,5 @@ int main()
     return 0;
 }
 ```
-causes trouble
 
 2. Send as little data as you can. sending a lot of data is known to catch a lot of [bandwidth](https://en.wikipedia.org/wiki/Bandwidth_(computing) "Bandwith (computing)") and causes your program to be called a **fat application**, Nobody wants that. If you have constant data that isn't going to change throughout the run-time of your program, you'd want to keep it in both your client and your server instead of sending it across the internet. The less data you send, the better networking programmer you are.
