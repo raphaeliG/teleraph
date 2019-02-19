@@ -22,6 +22,8 @@
 
 namespace net
 {
+	typedef char byte;
+
 	class Logger
 	{
 	private:
@@ -36,13 +38,14 @@ namespace net
 		Logger& operator<<(T output);
 	};
 
-	typedef char byte;
 	class Server
 	{
 	private:
 		bool usable;
+		bool doesLog;
 		WSADATA wsaData;
 		SOCKET ListenSocket;
+		std::string portNumber;
 		std::vector<SOCKET> sockets;
 		std::vector<std::thread> join_threads;
 		std::vector<std::string> addresses;
@@ -55,16 +58,17 @@ namespace net
 		if any error occurs, the server will become unusable, and a proper error message will be sent to a log file.
 		parameters:
 		portNumber - the port number, given as a string. best when set to above 10000.
+		doesLog - decides whether the server will be using a log when it runs
 		*/
-		Server(std::string portNumber);
+		Server(std::string portNumber, bool doesLog = false);
 		~Server();
+		static void accept_client(Server& server);//Blocking function to add a client.
 		void add_client();//Non-blocking function to add a client.
 		bool is_usable() const;//Determines whether the server is usable
 		void stop_listening();
 		void restart_listening();
 		void wait_for_clients();//Pauses the thread this function is called from untill all existing join threads are completed
 		std::vector<std::string> get_addresses() const;//Returns a vector containing all possible IPv4 addresses of the server
-		friend void accept_client(Server& server);//Blocking function to add a client.
 	};
 
 	class Client;
