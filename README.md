@@ -37,4 +37,4 @@ int main()
 }
 ```
 
-2. Send as little data as you can. sending a lot of data is known to catch a lot of [bandwidth](https://en.wikipedia.org/wiki/Bandwidth_(computing) "Bandwith (computing)") and causes your program to be called a **fat application**, Nobody wants that. If you have constant data that isn't going to change throughout the run-time of your program, you'd want to keep it in both your client and your server instead of sending it across the internet. The less data you send, the better networking programmer you are.
+2. Send as little data as you can. sending a lot of data is known to catch a lot of [bandwidth](https://en.wikipedia.org/wiki/Bandwidth_(computing) "Bandwith (computing)") and causes your program to be called a **fat application**. Nobody wants that. If you have constant data that isn't going to change throughout the run-time of your program, you'd want to keep it in both your client and your server instead of sending it across the internet. The less data you send, the better networking programmer you are.
