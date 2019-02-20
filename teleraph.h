@@ -24,6 +24,16 @@ namespace net
 {
 	typedef char byte;
 
+	enum PacketType { PROGRAM, SYSTEM };
+
+	struct Packet
+	{
+		int packet_len;
+		void* packet_data;
+		PacketType packet_type;
+
+	};
+
 	class Logger
 	{
 	private:
@@ -69,7 +79,8 @@ namespace net
 		void restart_listening();
 		void wait_for_clients();//Pauses the thread this function is called from untill all existing join threads are completed
 		std::vector<std::string> get_addresses() const { return addresses; }//Returns a vector containing all possible IPv4 addresses of the server
-		std::string getPortNumber() const { return portNumber; }
+		std::string getPortNumber() const { return portNumber; }//Returns the port number of which the server is binded to
+		void send_to_client(int clientNumber, const Packet& packet);
 	};
 
 	class Client
@@ -94,7 +105,7 @@ namespace net
 		~Client();
 		bool connect_to_server(std::string address);
 		bool is_usable() const { return usable; }//Determines whether the server is usable
-		std::string getPortNumber() const { return portNumber; }
+		std::string getPortNumber() const { return portNumber; }//Returns the port number of which the server is binded to
 	};
 }
 

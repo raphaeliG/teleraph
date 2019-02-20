@@ -205,3 +205,15 @@ void net::Server::wait_for_clients()
 		}
 	}
 }
+
+void net::Server::send_to_client(int clientNumber, const Packet& packet)
+{
+	std::lock_guard<std::mutex> lock(mute);
+	if (clientNumber >= 0 && clientNumber < sockets.size())
+	{
+		int len = packet.packet_len * sizeof(byte);
+		send(sockets[clientNumber], (const byte*)&len, sizeof(int), NULL);
+		send(sockets[clientNumber], (const byte*)&packet.packet_type, sizeof(PacketType), NULL);
+		send(sockets[clientNumber], (const byte*)&packet.packet_data, len, NULL);
+	}
+}
